@@ -18,14 +18,15 @@ class CandidateResolver:
         mr.quantities = quantities
         mr.text = text
 
-        dish_names = [d["dish_name"] for d in self.ds.dishes]
+        # Try to find dish from NER entities
         if entities.get("dishes"):
             dish_query = " ".join(entities["dishes"])
-            match = process.extractOne(dish_query, dish_names, scorer=fuzz.WRatio, score_cutoff=70)
-            if match:
-                mr.found_dish = self.ds.dish_by_name[match[0]]
+            dish = self.ds.get_dish_by_name(dish_query)
+            if dish:
+                mr.found_dish = dish
                 return mr
 
+        # If no dish, check for single ingredient
         if entities.get("ingredients"):
             ing_query = " ".join(entities["ingredients"])
             mr.single_ingredient = ing_query

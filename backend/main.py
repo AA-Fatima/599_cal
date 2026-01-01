@@ -1,14 +1,38 @@
 import uuid
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from services.pipeline import pipeline
 from services.missing_log import missing_log
 
 app = FastAPI(title="Calories Chatbot API")
 
+# Enable CORS for frontend access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 class CalculateRequest(BaseModel):
     query: str
     session_id: str | None = None
+
+@app.get("/")
+def root():
+    """Root endpoint - health check."""
+    return {
+        "status": "ok",
+        "service": "Calories Chatbot API",
+        "version": "1.0.0"
+    }
+
+@app.get("/health")
+def health():
+    """Health check endpoint."""
+    return {"status": "healthy"}
 
 @app.post("/api/calculate")
 def calculate(req: CalculateRequest):
