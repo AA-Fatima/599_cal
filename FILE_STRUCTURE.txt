@@ -1,0 +1,203 @@
+Calorie Chatbot - File Structure Overview
+==========================================
+
+Root Directory
+│
+├── Documentation
+│   ├── README.md                      # Main documentation (10.7KB)
+│   ├── QUICKSTART.md                  # Quick setup guide (3.6KB)
+│   ├── CONTRIBUTING.md                # Developer guidelines (5.2KB)
+│   ├── SECURITY.md                    # Security checklist (6.0KB)
+│   └── IMPLEMENTATION_SUMMARY.md      # Implementation details (11.3KB)
+│
+├── Configuration
+│   ├── .env.example                   # Development environment template
+│   ├── .env.production.template       # Production environment template
+│   ├── .gitignore                     # Git exclusions
+│   ├── docker-compose.yml             # Container orchestration
+│   ├── dev.sh                         # Development helper script
+│   └── requirements.txt               # Root requirements
+│
+├── backend/                           # FastAPI Backend
+│   │
+│   ├── Core
+│   │   ├── main.py                    # FastAPI app with CORS & logging
+│   │   ├── models.py                  # SQLAlchemy models (6 tables)
+│   │   ├── db.py                      # Database connection
+│   │   ├── settings.py                # Environment configuration
+│   │   ├── requirements.txt           # Python dependencies
+│   │   ├── Dockerfile                 # Backend container
+│   │   ├── .dockerignore              # Build optimization
+│   │   └── verify_setup.py            # Component verification
+│   │
+│   ├── services/                      # Business Logic
+│   │   ├── __init__.py
+│   │   ├── pipeline.py                # Main orchestration
+│   │   ├── usda_lookup.py             # Food database + Redis cache
+│   │   ├── dish_service.py            # Recipe calculation
+│   │   ├── fuzzy_lookup.py            # Entity resolution
+│   │   ├── intent.py                  # Intent classification
+│   │   ├── ner.py                     # CRF-based NER
+│   │   ├── ner_hf.py                  # Transformer NER
+│   │   ├── parser.py                  # Quantity parsing
+│   │   ├── synonyms.py                # Multi-language terms
+│   │   ├── unit_map.py                # Unit conversions
+│   │   ├── llm_missing.py             # LLM integration stub
+│   │   ├── missing_log.py             # Query logging
+│   │   ├── data_loader.py             # Legacy data loader
+│   │   └── nlp.py                     # NLP utilities
+│   │
+│   ├── scripts/                       # Database & ML Tools
+│   │   ├── __init__.py
+│   │   ├── init_db.py                 # Schema initialization
+│   │   ├── ingest_usda.py             # USDA data ingestion
+│   │   ├── ingest_dishes.py           # Dishes ingestion
+│   │   ├── populate_reference_data.py # Synonyms & units
+│   │   ├── ingest_all.py              # Master ingestion
+│   │   ├── train_intent.py            # Train intent model
+│   │   └── train_ner_crf.py           # Train NER model
+│   │
+│   ├── data/                          # Data Files
+│   │   ├── USDA_foundation.json       # USDA food database (6.3MB)
+│   │   ├── dishes.xlsx                # Dish recipes (84KB)
+│   │   └── USDA_sr_legacy.json        # [Optional] SR Legacy
+│   │
+│   └── models/                        # ML Models (user-trained)
+│       ├── README.md                  # Training instructions
+│       ├── intent.joblib              # [Optional] Intent model
+│       └── ner_hf/                    # [Optional] NER model
+│
+├── frontend/                          # Angular Frontend
+│   │
+│   ├── Configuration
+│   │   ├── package.json               # NPM dependencies
+│   │   ├── angular.json               # Angular config
+│   │   ├── tsconfig.json              # TypeScript config
+│   │   ├── tsconfig.app.json          # App TypeScript config
+│   │   ├── Dockerfile                 # Frontend container
+│   │   ├── nginx.conf                 # Production server config
+│   │   └── .dockerignore              # Build optimization
+│   │
+│   └── src/
+│       ├── main.ts                    # Bootstrap
+│       ├── index.html                 # HTML template
+│       ├── styles.css                 # Global styles
+│       ├── favicon.ico                # Icon
+│       │
+│       ├── app/
+│       │   ├── app.module.ts          # Root module
+│       │   ├── app.component.ts       # Root component
+│       │   │
+│       │   ├── components/
+│       │   │   └── chat/
+│       │   │       ├── chat.component.ts    # Chat logic
+│       │   │       ├── chat.component.html  # Chat template
+│       │   │       └── chat.component.css   # Chat styles
+│       │   │
+│       │   └── services/
+│       │       └── chat.service.ts    # API integration
+│       │
+│       ├── environments/
+│       │   └── environment.ts         # Environment config
+│       │
+│       └── assets/                    # Static files
+
+Database Schema (PostgreSQL)
+============================
+
+1. usda_items
+   - fdc_id (PK)
+   - name (GIN indexed)
+   - alt_names (JSON)
+   - per_100g_calories
+   - macros (JSON)
+
+2. dishes
+   - dish_id (PK)
+   - dish_name (GIN indexed)
+   - country
+   - date_accessed
+
+3. dish_ingredients
+   - id (PK)
+   - dish_id (FK)
+   - usda_fdc_id
+   - ingredient_name (GIN indexed)
+   - default_weight_g
+
+4. synonyms
+   - id (PK)
+   - term (unique indexed)
+   - canonical (indexed)
+
+5. unit_conversions
+   - id (PK)
+   - ingredient_group (indexed)
+   - unit
+   - grams
+
+6. missing_dishes
+   - id (PK)
+   - user_query
+   - parsed (JSON)
+   - suggested_ingredients (JSON)
+   - created_at
+
+Docker Services
+===============
+
+1. postgres:5432     - PostgreSQL 15 with pg_trgm
+2. redis:6379        - Redis 7 for caching
+3. backend:8000      - FastAPI application
+4. frontend:4200     - Angular with nginx
+
+Key Features
+============
+
+✓ Multi-language support (Arabic, English, Franco)
+✓ PostgreSQL fuzzy search (pg_trgm) + rapidfuzz
+✓ Redis caching for performance
+✓ ML models with safe fallbacks
+✓ Session management
+✓ Real-time calorie calculation
+✓ Flexible unit system
+✓ Missing dish logging
+✓ LLM integration ready
+✓ CORS enabled
+✓ Structured logging
+✓ Health checks
+✓ Docker orchestration
+✓ Comprehensive documentation
+
+Statistics
+==========
+
+Total Files:     50+
+Total Lines:     8,000+
+Languages:       Python, TypeScript, SQL, Shell
+Backend Files:   25+ (services, scripts, config)
+Frontend Files:  10+ (components, services, config)
+Documentation:   5 comprehensive guides (36.8KB)
+Data Files:      2 (6.4MB total)
+ML Models:       3 supported (optional)
+Synonyms:        70+ entries
+Unit Conv:       40+ entries
+API Endpoints:   3 (calculate, missing, health)
+
+Setup Commands
+==============
+
+Quick Start:
+  docker-compose up -d
+  docker-compose exec backend python scripts/ingest_all.py
+
+Development:
+  ./dev.sh start
+  ./dev.sh init
+  ./dev.sh logs
+
+Access:
+  Frontend:  http://localhost:4200
+  Backend:   http://localhost:8000
+  API Docs:  http://localhost:8000/docs
+  Health:    http://localhost:8000/health
