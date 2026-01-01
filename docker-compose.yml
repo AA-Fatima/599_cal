@@ -8,18 +8,59 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports: ["5432:5432"]
+    ports: 
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calories-net
+
   redis:
     image: redis:7
-    ports: ["6379:6379"]
+    ports: 
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calories-net
+
   backend:
     build: ./backend
     env_file: .env
-    depends_on: [postgres, redis]
-    ports: ["8000:8000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports: 
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_URL=redis://redis:6379/0
+    networks:
+      - calories-net
+
   frontend:
     build: ./frontend
-    depends_on: [backend]
-    ports: ["4200:4200"]
+    depends_on:
+      - backend
+    ports: 
+      - "4200:4200"
+    networks:
+      - calories-net
+
 volumes:
   pgdata:
+
+networks:
+  calories-net:
+    driver: bridge
