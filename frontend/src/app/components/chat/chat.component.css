@@ -1,0 +1,8 @@
+.chat-container { max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; height: 90vh; }
+.messages { flex: 1; overflow-y: auto; padding: 12px; background: #f7f7f7; }
+.messages .user { text-align: right; }
+.messages .bot { text-align: left; }
+.messages pre { background: #fff; padding: 8px 12px; border-radius: 8px; display: inline-block; max-width: 90%; white-space: pre-wrap; }
+.input-row { display: flex; gap: 8px; padding: 12px; background: #eee; }
+input { flex: 1; padding: 8px; }
+button { padding: 8px 16px; }
