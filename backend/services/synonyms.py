@@ -22,5 +22,10 @@ SYNONYMS = {
 }
 
 def canonical(term: str) -> str:
+    """Get canonical form of a term."""
     t = term.strip().lower()
     return SYNONYMS.get(t, t)
+
+def apply_synonyms(tokens: list) -> list:
+    """Apply synonym mapping to list of tokens."""
+    return [canonical(t) for t in tokens]
