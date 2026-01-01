@@ -8,92 +8,98 @@ from services.cache import cached
 
 class DishService:
     def __init__(self):
-        self.session: Session = None
+        pass
     
     def _get_session(self) -> Session:
-        """Get or create database session."""
-        if not self.session:
-            self.session = SessionLocal()
-        return self.session
+        """Get a new database session (caller must close)."""
+        return SessionLocal()
     
     @cached(ttl=3600, key_prefix="usda_cal_name")
     def get_calories_by_name(self, name: str):
         """Get calories for ingredient by name using fuzzy match."""
         session = self._get_session()
-        name_lower = name.lower().strip()
-        
-        # Try exact match first
-        item = session.query(UsdaItem).filter(UsdaItem.name == name_lower).first()
-        if item:
-            return item.per_100g_calories
-        
-        # Try pg_trgm similarity search
         try:
-            results = session.query(
-                UsdaItem,
-                func.similarity(UsdaItem.name, name_lower).label('sim')
-            ).filter(
-                func.similarity(UsdaItem.name, name_lower) > 0.3
-            ).order_by(
-                func.similarity(UsdaItem.name, name_lower).desc()
-            ).limit(1).all()
+            name_lower = name.lower().strip()
             
-            if results:
-                return results[0][0].per_100g_calories
-        except Exception:
-            # pg_trgm not available, fallback to LIKE
-            item = session.query(UsdaItem).filter(
-                UsdaItem.name.ilike(f"%{name_lower}%")
-            ).first()
+            # Try exact match first
+            item = session.query(UsdaItem).filter(UsdaItem.name == name_lower).first()
             if item:
                 return item.per_100g_calories
-        
-        return None
+            
+            # Try pg_trgm similarity search
+            try:
+                results = session.query(
+                    UsdaItem,
+                    func.similarity(UsdaItem.name, name_lower).label('sim')
+                ).filter(
+                    func.similarity(UsdaItem.name, name_lower) > 0.3
+                ).order_by(
+                    func.similarity(UsdaItem.name, name_lower).desc()
+                ).limit(1).all()
+                
+                if results:
+                    return results[0][0].per_100g_calories
+            except Exception:
+                # pg_trgm not available, fallback to LIKE
+                item = session.query(UsdaItem).filter(
+                    UsdaItem.name.ilike(f"%{name_lower}%")
+                ).first()
+                if item:
+                    return item.per_100g_calories
+            
+            return None
+        finally:
+            session.close()
     
     @cached(ttl=3600, key_prefix="usda_cal_id")
     def get_calories_by_id(self, fdc_id: int):
         """Get calories for ingredient by USDA FDC ID."""
         session = self._get_session()
-        item = session.query(UsdaItem).filter(UsdaItem.fdc_id == fdc_id).first()
-        return item.per_100g_calories if item else None
+        try:
+            item = session.query(UsdaItem).filter(UsdaItem.fdc_id == fdc_id).first()
+            return item.per_100g_calories if item else None
+        finally:
+            session.close()
     
     @cached(ttl=3600, key_prefix="dish")
     def get_dish_by_name(self, name: str):
         """Get dish by name using fuzzy match."""
         session = self._get_session()
-        name_lower = name.lower().strip()
-        
-        # Try exact match first
-        dish = session.query(Dish).filter(Dish.dish_name == name_lower).first()
-        if dish:
-            return self._dish_to_dict(dish)
-        
-        # Try pg_trgm similarity search
         try:
-            results = session.query(
-                Dish,
-                func.similarity(Dish.dish_name, name_lower).label('sim')
-            ).filter(
-                func.similarity(Dish.dish_name, name_lower) > 0.3
-            ).order_by(
-                func.similarity(Dish.dish_name, name_lower).desc()
-            ).limit(1).all()
+            name_lower = name.lower().strip()
             
-            if results:
-                return self._dish_to_dict(results[0][0])
-        except Exception:
-            # pg_trgm not available, fallback to LIKE
-            dish = session.query(Dish).filter(
-                Dish.dish_name.ilike(f"%{name_lower}%")
-            ).first()
+            # Try exact match first
+            dish = session.query(Dish).filter(Dish.dish_name == name_lower).first()
             if dish:
-                return self._dish_to_dict(dish)
-        
-        return None
+                return self._dish_to_dict(dish, session)
+            
+            # Try pg_trgm similarity search
+            try:
+                results = session.query(
+                    Dish,
+                    func.similarity(Dish.dish_name, name_lower).label('sim')
+                ).filter(
+                    func.similarity(Dish.dish_name, name_lower) > 0.3
+                ).order_by(
+                    func.similarity(Dish.dish_name, name_lower).desc()
+                ).limit(1).all()
+                
+                if results:
+                    return self._dish_to_dict(results[0][0], session)
+            except Exception:
+                # pg_trgm not available, fallback to LIKE
+                dish = session.query(Dish).filter(
+                    Dish.dish_name.ilike(f"%{name_lower}%")
+                ).first()
+                if dish:
+                    return self._dish_to_dict(dish, session)
+            
+            return None
+        finally:
+            session.close()
     
-    def _dish_to_dict(self, dish: Dish):
+    def _dish_to_dict(self, dish: Dish, session: Session):
         """Convert dish to dictionary with ingredients."""
-        session = self._get_session()
         ingredients = session.query(DishIngredient).filter(
             DishIngredient.dish_id == dish.dish_id
         ).all()

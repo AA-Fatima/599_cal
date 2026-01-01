@@ -52,9 +52,19 @@ export class ChatComponent implements AfterViewChecked {
         localStorage.setItem('chatbot_session_id', res.session_id);
         
         if (res.needs_clarification) {
+          let message = res.message;
+          
+          // Format suggested ingredients nicely
+          if (res.suggested_ingredients && Array.isArray(res.suggested_ingredients)) {
+            message += '\n\nSuggested ingredients:\n' + 
+              res.suggested_ingredients.map((ing: any) => `• ${ing.name || ing}`).join('\n');
+          } else if (res.suggested_ingredients) {
+            message += '\n\nSuggestions available';
+          }
+          
           this.messages.push({ 
             from: 'bot', 
-            text: res.message + (res.suggested_ingredients ? '\nSuggested: ' + JSON.stringify(res.suggested_ingredients) : '')
+            text: message
           });
         } else {
           this.messages.push({ 

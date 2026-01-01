@@ -32,8 +32,11 @@ class HFNER:
         
         try:
             tokens = self.tokenizer(text, return_offsets_mapping=True, return_tensors="pt", truncation=True)
+            # Prepare model inputs (exclude offset_mapping which is only for post-processing)
+            model_inputs = {k: v for k, v in tokens.items() if k != 'offset_mapping'}
+            
             with torch.no_grad():
-                logits = self.model(**{k: v for k, v in tokens.items() if k != 'offset_mapping'}).logits
+                logits = self.model(**model_inputs).logits
             preds = logits.argmax(-1)[0].tolist()
             offsets = tokens["offset_mapping"][0].tolist()
             dishes, ings = [], []
