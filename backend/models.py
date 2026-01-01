@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, JSON
+from sqlalchemy import Column, Integer, String, Float, JSON, ForeignKey, DateTime, Text
+from sqlalchemy.sql import func
 from db import Base
 
 class UsdaItem(Base):
@@ -18,8 +19,29 @@ class Dish(Base):
 
 class DishIngredient(Base):
     __tablename__ = "dish_ingredients"
-    id = Column(Integer, primary_key=True)
-    dish_id = Column(Integer, index=True)
-    usda_fdc_id = Column(Integer)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dish_id = Column(Integer, ForeignKey("dishes.dish_id"), index=True)
+    usda_fdc_id = Column(Integer, nullable=True)
     ingredient_name = Column(String)
     default_weight_g = Column(Float)
+
+class Synonym(Base):
+    __tablename__ = "synonyms"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    term = Column(String, unique=True, index=True)
+    canonical = Column(String, index=True)
+
+class UnitConversion(Base):
+    __tablename__ = "unit_conversions"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ingredient_group = Column(String, index=True)
+    unit = Column(String)
+    grams = Column(Float)
+
+class MissingDish(Base):
+    __tablename__ = "missing_dishes"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_query = Column(Text)
+    parsed = Column(JSON)
+    suggested_ingredients = Column(JSON, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
