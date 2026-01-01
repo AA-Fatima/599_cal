@@ -1,11 +1,53 @@
 <div class="chat-container">
-  <div class="messages">
-    <div *ngFor="let m of messages" [class.user]="m.from==='user'" [class.bot]="m.from==='bot'">
-      <pre>{{m.text}}</pre>
+  <div class="chat-header">
+    <h1>🍽️ Calorie Chatbot</h1>
+    <p>Ask about calories in any dish or ingredient</p>
+  </div>
+  
+  <div class="messages" #messagesContainer>
+    <div *ngFor="let m of messages" class="message" [class.user]="m.from==='user'" [class.bot]="m.from==='bot'">
+      <div class="message-bubble">
+        <div class="message-content">
+          <pre *ngIf="!m.breakdown">{{m.text}}</pre>
+          <div *ngIf="m.breakdown" class="breakdown">
+            <div class="dish-name">{{ m.breakdown.dish }}</div>
+            <div class="total-calories">Total: {{ m.breakdown.total_calories }} kcal</div>
+            <div class="ingredients">
+              <div *ngFor="let ing of m.breakdown.ingredients" class="ingredient">
+                <span class="ing-name">{{ ing.name }}</span>
+                <span class="ing-weight">{{ ing.weight_g }}g</span>
+                <span class="ing-cal">{{ ing.calories }} kcal</span>
+                <span *ngIf="ing.added" class="badge added">added</span>
+                <span *ngIf="ing.removed" class="badge removed">removed</span>
+              </div>
+            </div>
+            <div *ngIf="m.breakdown.notes && m.breakdown.notes.length > 0" class="notes">
+              <div *ngFor="let note of m.breakdown.notes" class="note">{{ note }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div *ngIf="loading" class="message bot">
+      <div class="message-bubble">
+        <div class="typing-indicator">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
     </div>
   </div>
+  
   <div class="input-row">
-    <input [(ngModel)]="input" (keyup.enter)="send()" placeholder="Ask about calories..." />
-    <button (click)="send()">Send</button>
+    <input 
+      [(ngModel)]="input" 
+      (keyup.enter)="send()" 
+      [disabled]="loading"
+      placeholder="Ask about calories... (e.g., 'fajita without cheese')" 
+      class="input-field"
+    />
+    <button (click)="send()" [disabled]="loading || !input.trim()" class="send-button">
+      {{ loading ? '...' : 'Send' }}
+    </button>
   </div>
 </div>

@@ -1,19 +1,20 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    POSTGRES_HOST: str
-    POSTGRES_DB: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    REDIS_URL: str
-    HF_NER_MODEL: str
-    INTENT_MODEL_PATH: str
-    USDA_FOUND_PATH: str
-    USDA_LEGACY_PATH: str
-    DISHES_XLSX_PATH: str
+    POSTGRES_HOST: str = "postgres"
+    POSTGRES_DB: str = "calories"
+    POSTGRES_USER: str = "calories"
+    POSTGRES_PASSWORD: str = "supersecret"
+    REDIS_URL: str = "redis://redis:6379/0"
+    HF_NER_MODEL: str = "models/ner_hf"
+    INTENT_MODEL_PATH: str = "models/intent.joblib"
+    USDA_FOUND_PATH: str = "data/USDA_foundation.json"
+    USDA_LEGACY_PATH: str = "data/USDA_sr_legacy.json"
+    DISHES_XLSX_PATH: str = "data/dishes.xlsx"
     LLM_API_KEY: str | None = None
 
     class Config:
         env_file = ".env"
+        case_sensitive = True
 
 settings = Settings()
