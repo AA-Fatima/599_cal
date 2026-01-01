@@ -12,55 +12,26 @@ from db import SessionLocal, engine
 from models import UsdaItem
 from settings import settings
 
-def stream_json_array(file_path):
-    """Stream JSON array items one at a time to handle large files."""
+def load_usda_json(file_path):
+    """Load USDA JSON file - handles both array format and object format."""
     with open(file_path, 'r', encoding='utf-8') as f:
-        # Skip opening bracket
-        first_char = f.read(1)
-        if first_char != '[':
-            f.seek(0)
+        data = json.load(f)
         
-        buffer = ""
-        bracket_count = 0
-        in_string = False
-        escape_next = False
-        
-        for line in f:
-            for char in line:
-                if escape_next:
-                    buffer += char
-                    escape_next = False
-                    continue
-                    
-                if char == '\\':
-                    buffer += char
-                    escape_next = True
-                    continue
-                    
-                if char == '"' and not escape_next:
-                    in_string = not in_string
-                    buffer += char
-                    continue
-                    
-                if not in_string:
-                    if char == '{':
-                        bracket_count += 1
-                    elif char == '}':
-                        bracket_count -= 1
-                    
-                    buffer += char
-                    
-                    if bracket_count == 0 and buffer.strip() and buffer.strip() not in [',', ']']:
-                        # Remove trailing comma
-                        obj_str = buffer.strip().rstrip(',')
-                        if obj_str.startswith('{'):
-                            try:
-                                yield json.loads(obj_str)
-                            except json.JSONDecodeError as e:
-                                print(f"Warning: Failed to parse object: {e}")
-                        buffer = ""
-                else:
-                    buffer += char
+        # Handle different JSON structures
+        if isinstance(data, list):
+            return data
+        elif isinstance(data, dict):
+            # Check for common USDA keys
+            if "FoundationFoods" in data:
+                return data["FoundationFoods"]
+            elif "SRLegacyFoods" in data:
+                return data["SRLegacyFoods"]
+            elif "foods" in data:
+                return data["foods"]
+            else:
+                # Return all values if it's a dict of food items
+                return list(data.values()) if data else []
+        return []
 
 def extract_usda_item(item):
     """Extract relevant fields from USDA JSON item."""
@@ -103,7 +74,7 @@ def extract_usda_item(item):
     }
 
 def ingest_usda_file(file_path: str, db: Session, batch_size=500):
-    """Ingest USDA JSON file (foundation or legacy) with streaming."""
+    """Ingest USDA JSON file (foundation or legacy)."""
     path = Path(file_path)
     if not path.exists():
         print(f"✗ File not found: {file_path}")
@@ -113,7 +84,11 @@ def ingest_usda_file(file_path: str, db: Session, batch_size=500):
     count = 0
     batch = []
     
-    for item in stream_json_array(file_path):
+    items = load_usda_json(file_path)
+    total = len(items)
+    print(f"  Found {total} items to process")
+    
+    for item in items:
         data = extract_usda_item(item)
         if data["fdc_id"] and data["name"] and data["per_100g_calories"] is not None:
             batch.append(data)
@@ -132,7 +107,7 @@ def ingest_usda_file(file_path: str, db: Session, batch_size=500):
                 )
                 db.execute(stmt)
                 db.commit()
-                print(f"  Inserted {count} items...", end='\r')
+                print(f"  Inserted {count}/{total} items...", end='\r')
                 batch = []
     
     # Insert remaining batch
