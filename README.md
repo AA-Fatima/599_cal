@@ -34,6 +34,7 @@ A full-stack calorie calculation chatbot powered by machine learning, featuring 
 - Docker & Docker Compose
 - Python 3.11+ (for training models)
 - Node.js 18+ (for frontend development)
+- Make (optional, for convenience commands)
 
 ### 1. Clone and Setup
 
@@ -50,6 +51,14 @@ nano .env  # Set LLM_API_KEY=your_key_here
 
 ### 2. Start with Docker Compose
 
+**Using Make (recommended):**
+```bash
+make build  # Build images
+make up     # Start services
+make logs   # View logs
+```
+
+**Or using docker-compose directly:**
 ```bash
 # Build and start all services
 docker-compose up -d
@@ -67,8 +76,13 @@ Services will be available at:
 
 The first time you run the stack, ingest the USDA and dishes data:
 
+**Using Make:**
 ```bash
-# Run ingestion script inside backend container
+make ingest
+```
+
+**Or using docker-compose:**
+```bash
 docker-compose exec backend python scripts/ingest_data.py
 ```
 
@@ -158,7 +172,26 @@ python scripts/train_ner_hf.py \
 HF_NER_MODEL=models/ner_hf
 ```
 
-## 🔧 Development
+## 🛠️ Development
+
+### Makefile Commands
+
+For convenience, a Makefile is provided with common commands:
+
+```bash
+make help          # Show all available commands
+make up            # Start all services
+make down          # Stop all services
+make build         # Build Docker images
+make logs          # View all logs
+make logs-backend  # View backend logs only
+make ingest        # Run data ingestion
+make shell-backend # Open shell in backend
+make shell-db      # Open PostgreSQL shell
+make clean         # Stop and remove volumes
+make restart       # Restart all services
+make rebuild       # Rebuild and restart
+```
 
 ### Backend Development
 

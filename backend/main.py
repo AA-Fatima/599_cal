@@ -20,6 +20,20 @@ class CalculateRequest(BaseModel):
     query: str
     session_id: str | None = None
 
+@app.get("/")
+def root():
+    """Root endpoint - health check."""
+    return {
+        "status": "ok",
+        "service": "Calories Chatbot API",
+        "version": "1.0.0"
+    }
+
+@app.get("/health")
+def health():
+    """Health check endpoint."""
+    return {"status": "healthy"}
+
 @app.post("/api/calculate")
 def calculate(req: CalculateRequest):
     session_id = req.session_id or str(uuid.uuid4())
