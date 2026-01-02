@@ -1,12 +1,19 @@
 import json
+import logging
 from typing import Optional
 from openai import OpenAI
 from config import settings
 from models.schemas import GPTResponse, Modifications
 
+logger = logging.getLogger(__name__)
+
 class OpenAIService:
     def __init__(self):
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else None
+        if settings.OPENAI_API_KEY:
+            self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        else:
+            self.client = None
+            logger.warning("OpenAI API key not configured. GPT parsing will be unavailable.")
         self.model = settings.OPENAI_MODEL
     
     def parse_food_query(self, user_query: str) -> Optional[GPTResponse]:
@@ -69,7 +76,7 @@ List typical ingredients for the dish if it's a common dish.
                 ingredients=data.get("ingredients", [])
             )
         except Exception as e:
-            print(f"OpenAI API error: {e}")
+            logger.error(f"OpenAI API error: {e}")
             return None
 
 openai_service = OpenAIService()

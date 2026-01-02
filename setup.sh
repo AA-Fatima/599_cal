@@ -54,7 +54,13 @@ case $choice in
         echo ""
         echo "Starting all services..."
         echo "This may take a few minutes on first run..."
-        docker-compose up --build
+        echo ""
+        read -p "Do you want to rebuild images? (y/N): " rebuild
+        if [[ $rebuild =~ ^[Yy]$ ]]; then
+            docker-compose up --build
+        else
+            docker-compose up
+        fi
         ;;
     2)
         echo ""
@@ -64,13 +70,20 @@ case $choice in
         fi
         echo "Installing backend_chatbot dependencies..."
         cd backend_chatbot
-        pip install -r requirements.txt
-        echo ""
-        echo "Running test script..."
-        python3 test_services.py
-        echo ""
-        echo "Test complete! To start the server, run:"
-        echo "  cd backend_chatbot && python3 main.py"
+        if pip install -r requirements.txt; then
+            echo ""
+            echo "✓ Dependencies installed successfully"
+            echo ""
+            echo "Running test script..."
+            python3 test_services.py
+            echo ""
+            echo "Test complete! To start the server, run:"
+            echo "  cd backend_chatbot && python3 main.py"
+        else
+            echo ""
+            echo "❌ Failed to install dependencies"
+            exit 1
+        fi
         ;;
     3)
         echo ""

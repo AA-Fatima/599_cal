@@ -145,7 +145,13 @@ class DishService:
         )
     
     def add_dish(self, dish_name: str, country: str, ingredients: List[Dict]) -> Dict:
-        """Add a new dish to the dataset (in-memory for now)"""
+        """
+        Add a new dish to the dataset (in-memory for now)
+        
+        Note: This currently only stores dishes in memory. For production use,
+        consider implementing persistence to the Excel file or database to
+        preserve dishes across service restarts.
+        """
         # Generate new dish ID
         max_id = max([d["dish_id"] for d in self.dishes], default=1000000)
         new_id = max_id + 1

@@ -1,4 +1,5 @@
 import uuid
+import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
@@ -13,6 +14,10 @@ from services.usda_lookup import UsdaLookup
 from services.dish_service import DishService
 from services.fallback_service import FallbackService
 from services.missing_logger import missing_logger
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Initialize services
 usda_lookup = UsdaLookup(settings.USDA_FOUND_PATH)
@@ -53,7 +58,7 @@ def chat(request: ChatRequest):
     try:
         gpt_response = openai_service.parse_food_query(request.query)
     except Exception as e:
-        print(f"OpenAI service error: {e}")
+        logger.error(f"OpenAI service error: {e}")
     
     # Fallback 1: Fuzzy matching
     if not gpt_response:
@@ -86,7 +91,7 @@ def chat(request: ChatRequest):
         response = dish_service.calculate_nutrition(gpt_response)
         return response
     except Exception as e:
-        print(f"Calculation error: {e}")
+        logger.error(f"Calculation error: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Error calculating nutrition: {str(e)}"
