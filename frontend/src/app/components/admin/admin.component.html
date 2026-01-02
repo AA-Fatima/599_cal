@@ -1,0 +1,107 @@
+<div class="admin-container">
+  <h1>Admin Dashboard</h1>
+  
+  <div class="section">
+    <div class="section-header">
+      <h2>All Dishes ({{ dishes.length }})</h2>
+      <button class="btn-primary" (click)="openAddDishModal()">+ Add New Dish</button>
+    </div>
+    
+    <div *ngIf="loading" class="loading">Loading...</div>
+    
+    <div class="dishes-grid">
+      <div *ngFor="let dish of dishes" class="dish-card">
+        <h3>{{ dish.dish_name }}</h3>
+        <p class="country">{{ dish.country }}</p>
+        <div class="stats">
+          <span>{{ dish.weight_g }}g</span>
+          <span>{{ dish.calories }} kcal</span>
+          <span>{{ dish.ingredients.length }} ingredients</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Missing Dishes ({{ missingDishes.length }})</h2>
+    
+    <div class="missing-list">
+      <div *ngFor="let missing of missingDishes" class="missing-card">
+        <h4>{{ missing.dish_name }}</h4>
+        <p class="query">User query: "{{ missing.user_query }}"</p>
+        <p class="timestamp">{{ missing.timestamp | date:'short' }}</p>
+        <div class="suggested">
+          Suggested ingredients:
+          <ul>
+            <li *ngFor="let ing of missing.gpt_suggested_ingredients">{{ ing }}</li>
+          </ul>
+        </div>
+        <button class="btn-secondary" (click)="useMissing(missing)">Use This</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Dish Modal -->
+<div *ngIf="showAddDishModal" class="modal-overlay" (click)="closeAddDishModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h2>Add New Dish</h2>
+    
+    <form (ngSubmit)="submitDish()">
+      <div class="form-group">
+        <label>Dish Name:</label>
+        <input type="text" [(ngModel)]="newDish.dish_name" name="dish_name" required />
+      </div>
+      
+      <div class="form-group">
+        <label>Country/Cuisine:</label>
+        <input type="text" [(ngModel)]="newDish.country" name="country" required />
+      </div>
+      
+      <div class="form-group">
+        <label>Ingredients:</label>
+        <div *ngFor="let ing of newDish.ingredients; let i = index" class="ingredient-row">
+          <div class="ingredient-input">
+            <input 
+              type="text" 
+              [(ngModel)]="ing.usda_name" 
+              [name]="'ingredient_' + i"
+              (input)="searchUsda(ing.usda_name, i)"
+              placeholder="Start typing ingredient name..."
+              required 
+            />
+            <div *ngIf="currentIngredientIndex === i && usdaSearchResults.length > 0" class="autocomplete">
+              <div 
+                *ngFor="let result of usdaSearchResults" 
+                class="autocomplete-item"
+                (click)="selectUsdaIngredient(result.name, i)"
+              >
+                {{ result.name }} (score: {{ result.score | number:'1.0-0' }})
+              </div>
+            </div>
+          </div>
+          
+          <input 
+            type="number" 
+            [(ngModel)]="ing.weight_g" 
+            [name]="'weight_' + i"
+            placeholder="Weight (g)"
+            min="1"
+            required 
+          />
+          
+          <button type="button" class="btn-remove" (click)="removeIngredient(i)">×</button>
+        </div>
+        
+        <button type="button" class="btn-secondary" (click)="addIngredient()">+ Add Ingredient</button>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeAddDishModal()">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="loading">
+          {{ loading ? 'Adding...' : 'Add Dish' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
