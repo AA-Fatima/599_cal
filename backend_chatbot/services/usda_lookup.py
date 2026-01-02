@@ -22,6 +22,10 @@ class UsdaLookupService:
         with open(path, "r", encoding="utf-8") as f:
             raw_data = json.load(f)
         
+        # Handle nested structure if present
+        if isinstance(raw_data, dict) and "FoundationFoods" in raw_data:
+            raw_data = raw_data["FoundationFoods"]
+        
         items = []
         for item in raw_data:
             fdc_id = item.get("fdcId") or item.get("fdc_id")
