@@ -75,5 +75,16 @@ Return ONLY a JSON object with this structure:
             )
             
         except Exception as e:
-            print(f"OpenAI API error: {e}")
+            # Log detailed error for debugging
+            error_type = type(e).__name__
+            print(f"OpenAI API error ({error_type}): {e}")
+            
+            # Handle specific OpenAI errors
+            if "authentication" in str(e).lower():
+                print("Authentication failed - check OPENAI_API_KEY")
+            elif "rate" in str(e).lower():
+                print("Rate limit exceeded - try again later")
+            elif "timeout" in str(e).lower():
+                print("Request timed out - check network connection")
+            
             return None
