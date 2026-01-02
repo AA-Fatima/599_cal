@@ -1,0 +1,131 @@
+<div class="admin-container">
+  <h1>Admin Dashboard</h1>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button 
+      [class.active]="activeTab === 'dishes'"
+      (click)="switchTab('dishes')">
+      Dishes ({{ dishes.length }})
+    </button>
+    <button 
+      [class.active]="activeTab === 'missing'"
+      (click)="switchTab('missing')">
+      Missing Dishes ({{ missingDishes.length }})
+    </button>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="loading">
+    Loading...
+  </div>
+
+  <!-- Dishes Tab -->
+  <div *ngIf="activeTab === 'dishes' && !loading" class="dishes-section">
+    <div class="header-row">
+      <h2>All Dishes</h2>
+      <button class="btn-primary" (click)="openAddDishModal()">+ Add New Dish</button>
+    </div>
+
+    <div class="dishes-list">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Dish Name</th>
+            <th>Country</th>
+            <th>Ingredients</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let dish of dishes">
+            <td>{{ dish.dish_id }}</td>
+            <td>{{ dish.dish_name }}</td>
+            <td>{{ dish.country }}</td>
+            <td>{{ dish.ingredients.length }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Missing Dishes Tab -->
+  <div *ngIf="activeTab === 'missing' && !loading" class="missing-section">
+    <h2>Missing Dishes Log</h2>
+
+    <div class="missing-list">
+      <div *ngFor="let missing of missingDishes" class="missing-item">
+        <h3>{{ missing.dish_name }}</h3>
+        <p><strong>Query:</strong> {{ missing.user_query }}</p>
+        <p><strong>Timestamp:</strong> {{ missing.timestamp }}</p>
+        <p><strong>GPT Suggestions:</strong></p>
+        <ul>
+          <li *ngFor="let ing of missing.gpt_suggested_ingredients">{{ ing }}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Dish Modal -->
+  <div *ngIf="showAddDishModal" class="modal-overlay" (click)="closeAddDishModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h2>Add New Dish</h2>
+
+      <div class="form-group">
+        <label>Dish Name:</label>
+        <input type="text" [(ngModel)]="newDish.dish_name" placeholder="e.g., Chicken Shawarma">
+      </div>
+
+      <div class="form-group">
+        <label>Country/Cuisine:</label>
+        <input type="text" [(ngModel)]="newDish.country" placeholder="e.g., Middle Eastern">
+      </div>
+
+      <div class="form-group">
+        <label>Ingredients:</label>
+        
+        <!-- Search USDA -->
+        <div class="search-box">
+          <input 
+            type="text" 
+            [(ngModel)]="searchQuery" 
+            (input)="searchUsda()"
+            placeholder="Search USDA ingredients...">
+          <div *ngIf="searchingUsda" class="searching">Searching...</div>
+        </div>
+
+        <!-- Search Results -->
+        <div *ngIf="searchResults.length > 0" class="search-results">
+          <div *ngFor="let result of searchResults" class="search-result-item" (click)="addIngredient(result)">
+            {{ result.name }}
+          </div>
+        </div>
+
+        <!-- Added Ingredients -->
+        <div class="ingredients-list">
+          <div *ngFor="let ing of newDish.ingredients; let i = index" class="ingredient-item">
+            <span>{{ ing.name }}</span>
+            <input 
+              type="number" 
+              [(ngModel)]="ing.weight_g" 
+              placeholder="Weight (g)"
+              class="weight-input">
+            <button (click)="removeIngredient(i)" class="btn-remove">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button (click)="saveDish()" class="btn-primary" [disabled]="loading">
+          {{ loading ? 'Saving...' : 'Save Dish' }}
+        </button>
+        <button (click)="closeAddDishModal()" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
